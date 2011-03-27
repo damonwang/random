@@ -1,0 +1,74 @@
+============
+Clumped Cars
+============
+
+My friend A.S. gave me this solution over some beer last night, and R.T.
+and I worked on it for a while.  The next day, I tried again with M.L.
+and we think this is correct.  Suggestions and corrections are welcome.
+
+
+Problem Statement
+=================
+
+There are n cars placed bumper-to-bumper facing the same way ("forward")
+on an infinitely long single-lane road.  Each driver is told to drive at
+a randomly selected, unique speed from the first n natural numbers, and
+forbidden to overtake.  After an infinitely long while, the cars will
+have formed some number of clumps along the road.  How many clumps
+should we expect?
+
+In case the assignment of speeds is unclear, imagine assigning the ith
+driver the speed i mph and then shuffling drivers before letting anyone
+start.  Every speed is assigned exactly once.
+
+
+Example
+=======
+
+For n = 3, we can answer the question by tabulating all 3! = 6 possible
+assignments of speeds and the number of clumps each assignment produces:
+
+Assignment  Clumps      Number of Clumps
+(1, 2, 3)	(1 2 3)     3
+(1, 3, 2)	(1 3-2)     2
+(2, 1, 3)	(2-1 3)	    2
+(2, 3, 1)	(2-3-1)	    1
+(3, 1, 2)	(3-1 2)	    2
+(3, 2, 1)   (3-2-1)     1
+
+So the expectation value is 11/6 for n = 3.
+
+
+Solution
+========
+
+Our strategy was to find a recursive formula and then solve the
+recurrence relation.
+
+In the base case where n = 0, it is clear that zero cars form zero
+clumps: 
+    C(0) = 0
+
+For n > 0, every car behind the slowest (1 mph) car will clump up behind
+it.  So if the slowest car has position i in line, then we have C(n-i)
+clumps due to the cars in front of it, and 1 clump from everybody else
+piling up behind the slowest car.  Averaging over all possible positions
+of the slowest car, 
+    C(n) = (1 / n) * Sum_{i = 1}^{n} [ C(n - i) + 1 ]
+or, with some rearrangement, 
+    n C(n) - n = Sum_{i = 1}^{n} C(n - i) 
+and rewriting the indices to give Eq. (1):
+    n C(n) - n = Sum_{i = 0}^{n-1} C(i)
+
+For n - 1 cars, we have
+    (n - 1) C(n - 1) - n + 1 = Sum_{i = 0}^{n - 2} C(i)
+Adding C(n - 1) to both sides gives Eq. (2):
+    n C(n - 1) - n + 1 = Sum_{i = 0}^{n - 1} C(i)
+    
+Noting that (1) and (2) have identical right-hand sides, 
+    n C(n) - n = n C(n - 1) - n + 1     =>
+    n C(n) = n C(n - 1) + 1             =>
+    C(n) = C(n - 1) + 1/n
+
+So C(0) = 0 and C(n > 0) = H_n where H_n is the nth partial sum of the
+harmonic series 1, 1/2, 1/3, ..., 1/n, ...

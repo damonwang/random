@@ -1,0 +1,48 @@
+===========
+Celebrities
+===========
+
+This is a question given to me by M.L. I present his solution, which is
+much more elegant than mine and admits an obvious proof of running time.
+
+Problem Statement
+-----------------
+
+We call a celebrity a person who knows nobody else, and whom every other
+person knows.  (Clearly, knowing is not symmetric, and every set of
+people can have zero or one celebrities.)
+
+We have a list of people and an oracle which will answer questions of
+the form, "Does person A know person B?" 
+
+Give an algorithm for finding a celebrity, if one exists.
+
+In graph-theoretic terms, our task is to search a directed graph (V, E)
+for a vertex with out-degree zero and in-degree |E| - 1.
+
+
+Solution
+--------
+
+Let C be the set of potential celebrities, stored in some data structure
+which permits efficient deletion, such as a linked list.
+
+Initialize C to contain every person.
+
+While C has at least two elements A and B, ask the oracle whether A
+knows B.
+
+If A knows B, then A cannot be a celebrity. 
+
+If A does not know B, then B cannot be a celebrity. 
+
+With each question to the oracle, we can eliminate an element from C.
+
+When there is only one element in C, ask the oracle whether everyone
+else knows it.
+
+In the worst case, this requires O(|V|) time and 2|V| queries to the
+oracle.  Queries to the oracle should be referentially transparent and
+therefore trivial to memoize.  (If querying the oracle is not
+referentially transparent, then the underlying digraph must be changing
+as we work, which opens up a whole new can of worms.)
