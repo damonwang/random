@@ -28,4 +28,4 @@ It's not actually difficult to modify a heap element in place: you just mutate, 
 
 [3] http://pko.ch/2008/08/22/memoization-in-python-easier-than-what-it-should-be/
 
-[4] Code on github: https://github.com/damonwang/random/tree/master/brainteasers
+[4] Code on github: https://github.com/damonwang/random/tree/master/memoization
