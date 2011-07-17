@@ -1,0 +1,31 @@
+*Memoization without cache invalidation is a memory leak*
+
+A few days ago at work, I halved the memory and CPU usage of an ncurses application by disabling memoization.  We think the problem was a combination of very little repetition and a bad hash function: our arguments tended to be big trees describing the screen layout, so there was almost always at least one node differing between any two calls, and our hash function tried to ensure true O(1) runtime by giving up after recursing a fixed number of levels in the tree.  
+
+As a result, we just kept pushing values into the table, and mostly into the same bucket of that table.  When I profiled the application, ten of the top twenty calls came out of the memoization library, or the hash table library that backed the memoization, or the balanced tree library that backed the hash table!
+
+*Bad Python examples on the internet*
+
+Python's decorator syntax is often demonstrated by implementing short, simple memoization decorators, most of which leak memory [1] [2] [3].  For example, memoizing a Fibonacci function and then calling it on the first million natural numbers brought my interpreter up to 916MB resident.  A simple way to fix those leaks is to replace the default dictionary with a size-constrained subclass that implements the CLOCK approximation to LRU cache invalidation [4].  
+
+With the size-constrained memoization, the user gets to choose his trade-off between memory and CPU, while being assured he won't blow out his RAM.  Limiting the cache to a hundred thousand slots and repeating the test with a million natural numbers, we see CPU time increases 16% from 2.12 sec to 2.46 sec, but memory usage drops the expected 90% from 916MB to 100MB.
+
+*Correction* Apparently, these results were skewed because the unconstrained memoization eventually had such a large dictionary that it started swapping.  On inputs small enough that the cache can always fit in memory, the CPU usage increases something like 400%. :-( 
+
+Note that these results are not meant to show that CLOCK is a good eviction strategy, but rather how to memoize with bounded memory usage. Since I test by calculating the Fibonacci numbers in order, CLOCK is equivalent to LRU (and, in fact, also equivalent to the optimal clairvoyant algorithm).  CLOCK can and does perform worse for other access patterns.  However, the performance of size-constrained memoization with CLOCK (or any other eviction algorithm) is equivalent to unconstrained memoization up to the size constraint, so this works fine for the particular use case of not letting ncurses eat 500MB.
+
+*Why write the CLOCK approximation instead of true LRU?*
+
+I would have liked true LRU, but I couldn't figure out how to do it without duplicating a lot of code from the standard libraries, and it seemed inappropriate to offer a 300-line patch on a ten-line decorator.  Besides, CLOCK works well enough in practice, or so I'll tell myself now.
+
+In case anyone does want to implement it or has a better approach, I'll describe my design. The idea was to keep a priority queue of timestamped arguments sorted by reverse-chronological time of last call (i.e, least recently-seen arguments at the root of the heap).  The complication, of course, was that calls might repeat arguments, so that the timestamp would need to be modified while the argument was in the heap.  
+
+It's not actually difficult to modify a heap element in place: you just mutate, sift down, and then sift up.  What is difficult is finding the element to modify.  There's no good way to search the heap, so I would have to keep a record of the current location and update that record on every single heap modification.  And that means I would have to write my own heap.
+
+[1] http://wiki.python.org/moin/PythonDecoratorLibrary#Memoize
+
+[2] http://programmingzen.com/2009/05/18/memoization-in-ruby-and-python/
+
+[3] http://pko.ch/2008/08/22/memoization-in-python-easier-than-what-it-should-be/
+
+[4] Code on github: https://github.com/damonwang/random/tree/master/brainteasers
