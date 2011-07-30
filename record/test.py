@@ -18,6 +18,11 @@ class TestFoo(unittest.TestCase):
     'zero fields'
     self.assert_(Record.define('Foo', ()))
 
+  def test_empty_name(self):
+    'empty record name'
+    self.assertRaises(record.InvalidName,
+        Record.define, '', ())
+
   def test_repr(self):
     'repr'
     self.assert_(repr(self.foo) == 'Foo(foo=1, bar=2, baz=3)')
