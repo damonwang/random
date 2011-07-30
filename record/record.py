@@ -16,39 +16,54 @@ class {typename} (object):
     name, no as_namedtuple method will be generated.
     \'\'\'
 
-    __slots__ = ('foo', 'bar', 'baz')
+    __slots__ = {fields}
 
     immutable_form = namedtuple('Immutable{typename}', __slots__)
 
-    def __init__(self, foo=None, bar=None, baz=None):
-        self.foo = foo
-        self.bar = bar
-        self.baz = baz
-
+    def __init__(self, {fields_as_args}):
+        {init}
     def __repr__(self):
         'return a nicely formatted representation string'
-        return '{typename}(foo={{foo}}, bar={{bar}}, baz={{baz}})'.format(
-                foo=self.foo, bar=self.bar, baz=self.baz)
+        return '{repr_format}'.format({field_values})
 
     def as_dict(self):
         'return a new dict representing the same key->value mapping'
-        return dict(foo=self.foo, bar=self.bar, baz=self.baz)
+        return dict({field_values})
 
     def as_namedtuple(self):
         'return an immutable copy using collections.namedtuple.'
-        return self.immutable_form(foo=self.foo, bar=self.bar, baz=self.baz)
+        return self.immutable_form({field_values})
 
-    def but_with(self, foo=None, bar=None, baz=None):
+    def but_with(self, {fields_as_args}):
         \'\'\'
         a functional update: return a new record, filling in unspecified
         fields with the corresponding values in this record.
         \'\'\'
-        return {typename}(foo = foo or self.foo, bar = bar or self.bar,
-                baz = baz or self.baz)
+        return {typename}({field_values_as_defaults})
 '''
 
-def define(typename):
-    class_definition = class_template.format(typename=typename)
+def define(typename, field_names):
+    class_definition = class_template.format(typename=typename,
+            fields = repr(tuple(field_names)),
+            fields_as_args = ', '.join('%s=None' % field for field in field_names),
+            # this is an odd syntax, but necessary because making the
+            # indentation work out across multiple lines is difficult
+            # (This is clearly a limitation of the technique that will
+            # become more of a problem if we try to generalize it into a
+            # macro system.)
+            init = '%s = %s' % (
+                ', '.join('self.%s' % field for field in field_names),
+                ', '.join('%s' % field for field in field_names)),
+            repr_format = '{typename}({values})'.format(
+                typename=typename,
+                values = ', '.join('%s={%s}' % (field, field) 
+                    for field in field_names)),
+            field_values = ', '.join('%s=self.%s' % (field, field)
+                for field in field_names),
+            field_values_as_defaults = 
+            ', '.join('{field} = {field} or self.{field}'.format(field=field)
+                for field in field_names)
+            )
     namespace = dict(__name__='Record_%s' % typename)
 
     # the following lines are closely copied from collections.namedtuple
@@ -69,7 +84,7 @@ def define(typename):
 
 class TestFoo(unittest.TestCase):
     def setUp(self):
-        record = define('Foo')
+        record = define('Foo', ('foo', 'bar', 'baz'))
         self.foo = record(foo=1, bar=2, baz=3)
 
     def test_init(self):
@@ -100,6 +115,47 @@ class TestFoo(unittest.TestCase):
         self.assert_(new_foo.baz == '3')
         self.assert_(new_foo.foo == self.foo.foo)
 
+class TestHam(unittest.TestCase):
+    '''
+    this test suite ensures that I've generalized all the specific
+    references to foo, bar, baz etc. from when I wrote out the template
+    manually.
+    '''
+    def setUp(self):
+        record = define('Ham', ('ham', 'spam', 'eggs'))
+        self.ham = record(ham=1, spam=2, eggs=3)
+
+    def test_init(self):
+        ham = self.ham
+        self.assert_(ham.ham == 1)
+        self.assert_(ham.spam == 2)
+        self.assert_(ham.eggs == 3)
+
+    def test_repr(self):
+        self.assert_(repr(self.ham) == 'Ham(ham=1, spam=2, eggs=3)')
+
+    def test_as_dict(self):
+        ham = self.ham
+        self.assert_(ham.as_dict() 
+                == dict(ham=ham.ham, spam=ham.spam, eggs=ham.eggs))
+
+    def test_as_namedtuple(self):
+        ham = self.ham
+        ntup = ham.as_namedtuple()
+        self.assert_(ntup == (ham.ham, ham.spam, ham.eggs))
+        self.assert_(ntup.ham == ham.ham)
+        self.assert_(ntup.spam == ham.spam)
+        self.assert_(ntup.eggs == ham.eggs)
+
+    def test_but_with(self):
+        new_ham = self.ham.but_with(spam='2', eggs='3')
+        self.assert_(new_ham.spam == '2')
+        self.assert_(new_ham.eggs == '3')
+        self.assert_(new_ham.ham == self.ham.ham)
+
+
 def test():
-    tests = unittest.TestLoader().loadTestsFromTestCase(TestFoo)
-    unittest.TextTestRunner().run(tests)
+    loader = unittest.TestLoader()
+    suite = unittest.TestSuite(map(loader.loadTestsFromTestCase,
+        (TestFoo, TestHam)))
+    unittest.TextTestRunner().run(suite)
