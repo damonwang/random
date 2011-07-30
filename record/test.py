@@ -32,6 +32,11 @@ class TestFoo(unittest.TestCase):
         Record.define, 'Foo', ('_foo',),
         allow_leading_underscores=False)
 
+  def test_duplicate_fields(self):
+    'duplicate fields'
+    self.assertRaises(SyntaxError,
+        Record.define, 'Foo', ('foo', 'foo'))
+
   def test_repr(self):
     'repr'
     self.assert_(repr(self.foo) == 'Foo(foo=1, bar=2, baz=3)')
