@@ -23,6 +23,15 @@ class TestFoo(unittest.TestCase):
     self.assertRaises(record.InvalidName,
         Record.define, '', ())
 
+  def test_leading_underscores(self):
+    'leading underscores'
+    self.assert_(Record.define('Foo', ('_foo',)))
+    self.assert_(Record.define('Foo', ('foo',),
+      allow_leading_underscores=False))
+    self.assertRaises(record.InvalidName,
+        Record.define, 'Foo', ('_foo',),
+        allow_leading_underscores=False)
+
   def test_repr(self):
     'repr'
     self.assert_(repr(self.foo) == 'Foo(foo=1, bar=2, baz=3)')

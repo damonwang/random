@@ -9,8 +9,6 @@ class {typename} (object):
 
     __slots__ = {fields}
 
-    immutable_form = namedtuple('Immutable{typename}', __slots__)
-
     def __init__(self{fields_as_args}):
         {init}
     def __repr__(self):
@@ -21,10 +19,6 @@ class {typename} (object):
         'return a new dict representing the same key->value mapping'
         return dict({field_values})
 
-    def as_namedtuple(self):
-        'return an immutable copy using collections.namedtuple.'
-        return self.immutable_form({field_values})
-
     def but_with(self{fields_as_args}):
         \'\'\'
         a functional update: return a new record, filling in unspecified
@@ -33,7 +27,7 @@ class {typename} (object):
         return {typename}({field_values_as_defaults})
 '''
 
-def specialize_template(typename, field_names):
+def specialize_class(typename, field_names):
   if len(field_names) > 0:
     # hence the strange "self{fields_as_args syntax in the template
     fields_as_args = ', ' + ', '.join('%s=None' % field for field in field_names)
@@ -47,7 +41,8 @@ def specialize_template(typename, field_names):
       ', '.join('%s' % field for field in field_names))
   else: fields_as_args, init = '', 'pass'
 
-  return class_template.format(typename=typename,
+  return class_template.format(
+      typename=typename,
       fields = repr(tuple(field_names)),
       fields_as_args = fields_as_args,
       init = init,
@@ -55,15 +50,31 @@ def specialize_template(typename, field_names):
         typename=typename,
         values = ', '.join('%s={%s}' % (field, field) 
           for field in field_names)),
-        field_values = ', '.join('%s=self.%s' % (field, field)
-          for field in field_names),
-        field_values_as_defaults = 
-        ', '.join('{field} = {field} or self.{field}'.format(field=field)
-          for field in field_names)
-        )
+      field_values = ', '.join('%s=self.%s' % (field, field)
+        for field in field_names),
+      field_values_as_defaults = 
+      ', '.join('{field} = {field} or self.{field}'.format(field=field)
+        for field in field_names)
+      )
 
-def unsafe_define(typename, field_names):
-    class_definition = specialize_template(typename, field_names)
+as_namedtuple_template = '''
+    immutable_form = namedtuple('Immutable{typename}', __slots__)
+
+    def as_namedtuple(self):
+        'return an immutable copy using collections.namedtuple.'
+        return self.immutable_form({field_values})
+'''
+
+def specialize_as_namedtuple(typename, field_names):
+  return as_namedtuple_template.format(
+      typename=typename,
+      field_values = ', '.join('%s=self.%s' % (field, field)
+        for field in field_names))
+
+def unsafe_define(typename, field_names, as_namedtuple=True):
+    class_definition = specialize_class(typename, field_names)
+    if as_namedtuple: 
+      class_definition += specialize_as_namedtuple(typename, field_names)
     namespace = dict(__name__='Record_%s' % typename)
 
     # the following lines are closely copied from collections.namedtuple
@@ -114,5 +125,12 @@ class Record (object):
   '''
 
   @staticmethod
-  def define(typename, field_names):
-    return unsafe_define(make_safe_id(typename), map(make_safe_id, field_names))
+  def define(typename, field_names, allow_leading_underscores=True):
+    typename = make_safe_id(typename)
+    field_names = map(make_safe_id, field_names)
+    if not filter(lambda s: s[0] == '_', field_names): 
+      # no underscores in field names
+      return unsafe_define(typename, field_names)
+    elif allow_leading_underscores: 
+      return unsafe_define(typename, field_names, as_namedtuple=False)
+    else: raise InvalidName
