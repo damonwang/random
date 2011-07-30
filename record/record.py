@@ -1,4 +1,6 @@
 import sys 
+import ast
+import _ast
 
 class_template = '''
 from collections import namedtuple
@@ -81,6 +83,25 @@ def unsafe_define(typename, field_names):
 
     return result
 
+
+class WouldShadowExistingAttribute (Exception): pass
+class InvalidName (Exception): pass
+
+def get_existing_attributes():
+  # TODO fix the zero-fields bug and them remove the if not 'foo' clause
+  return [x for x in dir(unsafe_define('Foo', ('foo',))) if x != 'foo']
+
+existing_attributes = set(get_existing_attributes())
+
+def make_safe_id(string):
+  try: node = ast.parse(string).body[0].value
+  except Exception as e: raise InvalidName(string, e)
+  if not isinstance(node, _ast.Name):
+    raise InvalidName(string)
+  elif node.id in existing_attributes:
+    raise WouldShadowExistingAttribute(string)
+  else: return node.id
+
 class Record (object):
   '''
   Names may be anything AST.parse will accept for an _ast.Name object,
@@ -94,4 +115,4 @@ class Record (object):
 
   @staticmethod
   def define(typename, field_names):
-    return unsafe_define(typename, field_names)
+    return unsafe_define(make_safe_id(typename), map(make_safe_id, field_names))

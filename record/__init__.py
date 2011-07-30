@@ -1,4 +1,4 @@
-from record import Record
+from record import Record, InvalidName, WouldShadowExistingAttribute
 from test import test
 
-__all__ = [Record, test]
+__all__ = [Record, InvalidName, WouldShadowExistingAttribute, test]

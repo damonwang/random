@@ -85,8 +85,29 @@ class TestHam(unittest.TestCase):
     self.assert_(new_ham.eggs == '3')
     self.assert_(new_ham.ham == self.ham.ham)
 
+class TestInjection(unittest.TestCase):
+  '''
+  tests ability to detect invalid parameters (e.g., template injection
+  attacks in the field names)
+  '''
+
+  def test_spaces(self):
+    self.assertRaises(record.InvalidName,
+        Record.define, 'Foo Bar', ('foo', 'bar', 'baz'))
+    self.assertRaises(record.InvalidName,
+        Record.define, 'Foo', ('foo bar', 'bar', 'baz'))
+
+  def test_syntax(self):
+    self.assertRaises(record.InvalidName,
+        Record.define, 'Foo', ('f@@f',))
+
+  def test_shadow(self):
+    self.assertRaises(record.WouldShadowExistingAttribute,
+        Record.define, 'Foo', ('__repr__',))
+
+
 def test():
   loader = unittest.TestLoader()
   unittest.TextTestRunner().run(
       unittest.TestSuite(map(loader.loadTestsFromTestCase,
-        (TestFoo, TestHam))))
+        (TestFoo, TestHam, TestInjection))))
