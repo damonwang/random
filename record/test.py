@@ -39,7 +39,8 @@ class TestFoo(unittest.TestCase):
 
   def test_repr(self):
     'repr'
-    self.assert_(repr(self.foo) == 'Foo(foo=1, bar=2, baz=3)')
+    self.assert_(repr(self.foo) == 'Foo(foo=1, bar=2, baz=3)', 
+        msg=repr(self.foo))
 
   def test_as_dict(self):
     'as_dict'
