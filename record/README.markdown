@@ -16,19 +16,19 @@ But C-style macros are fragile, limited things even in C, and they only get wors
 
 The Lisp-style implementation was much more tedious, since Python has a reasonably complex grammar and therefore writing out an abstract syntax tree using the raw constructors gets to be a very verbose process.  Here's the AST for generating a one-line "return dict(a=1, b=2)" function:
 
-    ```python
-    FunctionDef(name='as_dict', decorator_list=[],
-      args=__AST_only_self_as_arg__,
-      body=[
-        docstring('return a new dict representing the same key->value mapping'),
-        Return(value=Call(args=[], starargs=None, kwargs=None,
-          keywords=[
-            keyword(arg=field,
-              value=Attribute(attr=field, ctx=Load(), 
-                value=Name(id='self', ctx=Load())))
-              for field in field_names],
-          func=Name(id='dict', ctx=Load())))])
-    ```
+```python
+FunctionDef(name='as_dict', decorator_list=[],
+  args=__AST_only_self_as_arg__,
+  body=[
+    docstring('return a new dict representing the same key->value mapping'),
+    Return(value=Call(args=[], starargs=None, kwargs=None,
+      keywords=[
+        keyword(arg=field,
+          value=Attribute(attr=field, ctx=Load(), 
+            value=Name(id='self', ctx=Load())))
+          for field in field_names],
+      func=Name(id='dict', ctx=Load())))])
+```
 
 Lisp has both great macros and basically no syntax, and apparently this is not a coincidence.
 
