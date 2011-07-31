@@ -1,6 +1,6 @@
 # Macros in Python: pick at least one of unsafe, tedious, or illegible
 
-My [memoization code] [memo] defined two custom classes ClockRecord and HashRecord which were basically mutable namedtuples, written out manually.  Fed up with this manual macro expansion, I sat down yesterday to out a proper Record macro, and ended up implementing it twice: once by interpolating Python source code into a string, and again by generating the abstract syntax tree directly.  In other words, I implemented the [Record macro] [record-code] twice, once in the C macro style and again in the Lisp macro style.
+My memoization code [memo] defined two custom classes ClockRecord and HashRecord which were basically mutable namedtuples, written out manually.  Fed up with this manual macro expansion, I sat down yesterday to out a proper Record macro, and ended up implementing it twice: once by interpolating Python source code into a string, and again by generating the abstract syntax tree directly.  In other words, I implemented the [Record macro] [record-code] twice, once in the C macro style and again in the Lisp macro style.
 
 ## Literature review
 
