@@ -100,9 +100,6 @@ def get_ast(typename, field_names, as_namedtuple=True):
             func=Attribute(attr='immutable_form', ctx=Load(),
               value=Name(id='self', ctx=Load()))))])])
         
-  module = Module(body=[class_def], lineno=1, col_offset=0)
-  #print ast.dump(module, include_attributes=True)
-  module = ast.fix_missing_locations(module)
-  #print ast.dump(module, include_attributes=True)
-
-  return compile(module, filename='Record_%s' % typename, mode='exec')
+  return compile(filename='Record_%s' % typename, mode='exec',
+      source=ast.fix_missing_locations(Module(body=[class_def], 
+        lineno=1, col_offset=0)))

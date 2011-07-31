@@ -20,7 +20,7 @@ class TestFoo(unittest.TestCase):
 
   def test_empty_name(self):
     'empty record name'
-    self.assertRaises(record.InvalidName,
+    self.assertRaises(record.InvalidNameError,
         Record.define, '', ())
 
   def test_leading_underscores(self):
@@ -28,7 +28,7 @@ class TestFoo(unittest.TestCase):
     self.assert_(Record.define('Foo', ('_foo',)))
     self.assert_(Record.define('Foo', ('foo',),
       allow_leading_underscores=False))
-    self.assertRaises(record.InvalidName,
+    self.assertRaises(record.InvalidNameError,
         Record.define, 'Foo', ('_foo',),
         allow_leading_underscores=False)
 
@@ -112,17 +112,17 @@ class TestInjection(unittest.TestCase):
   '''
 
   def test_spaces(self):
-    self.assertRaises(record.InvalidName,
+    self.assertRaises(record.InvalidNameError,
         Record.define, 'Foo Bar', ('foo', 'bar', 'baz'))
-    self.assertRaises(record.InvalidName,
+    self.assertRaises(record.InvalidNameError,
         Record.define, 'Foo', ('foo bar', 'bar', 'baz'))
 
   def test_syntax(self):
-    self.assertRaises(record.InvalidName,
+    self.assertRaises(record.InvalidNameError,
         Record.define, 'Foo', ('f@@f',))
 
   def test_shadow(self):
-    self.assertRaises(record.WouldShadowExistingAttribute,
+    self.assertRaises(record.ExistingAttributeError,
         Record.define, 'Foo', ('__repr__',))
 
 
