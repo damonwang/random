@@ -30,16 +30,16 @@ I tried to write this in English, and just found myself redefining OCaml.  So, h
 
 Let l be a linked list [3] holding the elements of U in any order.
 
-let f l = 
-| [] -> []
-| (_::_) as l -> snd (List.hd_exn (fold l ~init:[] ~f:(fun cdr x ->
-    let (<) a b = (absolute_value a) < (absolute_value b) in
-    let car = fold cdr ~init:(x, x::[]) ~f:(fun (score', s') y ->
-	if y < score' then (y, y::[])
-	else if y + x < score' then (y + x, x::y::[])
-	else if score' + x < score' then (score' + x, x::s')
-	else (score', s'))
-    in car::cdr)))
+    let f l = 
+    | [] -> []
+    | (_::_) as l -> snd (List.hd_exn (fold l ~init:[] ~f:(fun cdr x ->
+	let (<) a b = (absolute_value a) < (absolute_value b) in
+ 	let car = fold cdr ~init:(x, x::[]) ~f:(fun (score', s') y ->
+ 	    if y < score' then (y, y::[])
+ 	    else if y + x < score' then (y + x, x::y::[])
+ 	    else if score' + x < score' then (score' + x, x::s')
+ 	    else (score', s'))
+ 	in car::cdr)))
 
 ## Variations
 
@@ -57,21 +57,22 @@ Using p processors, I think I can solve our problem for n elements in O(n log n)
 
 Our outer fold initializes each node of its output list by searching all the previous nodes.  It must initialize the nodes in order, but it can search them out of order.  In fact, it can search every already-initialized node independently.  So we distribute the initialized nodes across the available processors and write some version of this pseudocode:
 
-define (<) a b as before
-define f shard = fold shard ~init:(x, x::[]) ~f:(fun (score', s') y ->
-    if y < score' then (y, y::[])
-    else if y + x < score' then (y + x, x::y::[])
-    else if score' + x < score' then (score' + x, x::s')
-    else (score', s'))
-where `shard` refers to the initialized nodes assigned to that processor
+    define (<) a b as before
+    define f shard = fold shard ~init:(x, x::[]) ~f:(fun (score', s') y ->
+	if y < score' then (y, y::[])
+	else if y + x < score' then (y + x, x::y::[])
+ 	else if score' + x < score' then (score' + x, x::s')
+ 	else (score', s'))
+    where `shard` refers to the initialized nodes assigned to that processor
 
-let `reduce` use Lisp's foldl semantics:  if no ~init is supplied, use the last element as the initial value.
+    let `reduce` use Lisp's foldl semantics:  if no ~init is supplied, use the last element as the initial value.
 
-for integer `x` in U:
-    replies <- map f over all processors
-    n <- reduce replies ~f:(fun x y -> if fst y < fst x then y else x)
-    send the new node n to one of the processors
-The solution is snd n where n was the last node constructed.
+    for integer `x` in U:
+        replies <- map f over all processors
+ 	n <- reduce replies ~f:(fun x y -> if fst y < fst x then y else x)
+	send the new node n to one of the processors
+
+    The solution is snd n where n was the last node constructed.
 
 Of course, in practice we would want some sort of p-ary tree of reductions.  I've elided this bit because it's probably easier for you to imagine than for me to describe.
 
@@ -81,57 +82,57 @@ Also, I'm cheating a little by assuming we have arbitrarily many processors avai
 
 Even with the implicit p-ary tree of reductions, our map operation consumes processors like this:
 
-0       1       2       3       4       5       6       7
+    0       1       2       3       4       5       6       7
 
-01      23      45      67
+    01      23      45      67
 
-03      47
+    03      47
 
-07
+    07
 
-0'      1'      2'      3'      4'      5'      6'      7'
+    0'      1'      2'      3'      4'      5'      6'      7'
 
-0'1'    2'3'    4'5     6'7'
+    0'1'    2'3'    4'5     6'7'
 
-0'3'    4'7'
+    0'3'    4'7'
 
-0'7'    07
+    0'7'    07
 
-07'
+    07'
 
-0"      1"      2"      3"      4"      5"      6"      7"
+    0"      1"      2"      3"      4"      5"      6"      7"
 
-0"1"    2"3"    4"5"    6"7"
+    0"1"    2"3"    4"5"    6"7"
 
-0"3"    4"7"
+    0"3"    4"7"
 
-0"7"    07'
+    0"7"    07'
 
-07"
+    07"
 
 producing a new node every log n + 1 time intervals.
 
 But we don't need to wait for the 07 node to finish before we can begin the 0'7' node.  We just need the 07 node to finish before we can finish the 0'7' node.  So we can pipeline the nodes like this:
 
-0       1       2       3       4       5       6       7
+    0       1       2       3       4       5       6       7
 
-01      23      45      67      0'      1'      2'      3'
+    01      23      45      67      0'      1'      2'      3'
 
-03      47      0'1'    2'3'    4'      5'      6'      7'
+    03      47      0'1'    2'3'    4'      5'      6'      7'
 
-07      0'3'    4'5'    6'7'    0"      1"      2"      3"
+    07      0'3'    4'5'    6'7'    0"      1"      2"      3"
 
-03'     4'7'    0"1"    2"3"    4"      5"      6"      7"
+    03'     4'7'    0"1"    2"3"    4"      5"      6"      7"
 
-07'     0"3"    4"5"    6"7"    0`      1`      2`      3`
+    07'     0"3"    4"5"    6"7"    0`      1`      2`      3`
 
-03"     4"7"    0`1`    2`3`    4`      5`      6`      7`
+    03"     4"7"    0`1`    2`3`    4`      5`      6`      7`
 
-07"     0`3`    4`5`    6`7`    0~      1~      2~      3~
+    07"     0`3`    4`5`    6`7`    0~      1~      2~      3~
 
-03`     4`7`    0~1~    2~3~    4~      5~      6~      7~
+    03`     4`7`    0~1~    2~3~    4~      5~      6~      7~
 
-07`     0~3~    4~5~    6~7~    ...
+    07`     0~3~    4~5~    6~7~    ...
 
 After a small start-up lag, we complete a node every two time intervals, regardless of the input size.  So pipelining gets us down to (almost) linear time.
 
