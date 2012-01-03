@@ -1,3 +1,7 @@
+# NOTE
+
+In case you found this via Google or something, note that what follows is incorrect.  The diet problem is actually an example of the subset-sum problem; there is a well-documented dynamic programming solution, but it is not the one I describe below.
+
 # Dropbox Diet Challenge
 
 This is the third of three problems posed by Dropbox.  Stripped of its cutesy recruiting pitch about finding calorie-neutral combinations of (free) food and (paid) work, the problem is this: *given a set of integers U and its cardinality n, return a subset S whose sum is zero or decide that no such subset exists.*
